@@ -314,6 +314,21 @@ footer{text-align:center;color:var(--muted);font-size:.85rem;margin:20px 0}
 const AUTH_USER = "adm";
 const AUTH_PASS = "123";
 
+  function doLogin() {
+  const u = document.getElementById("loginUser").value.trim();
+  const p = document.getElementById("loginPass").value.trim();
+
+  if (u === AUTH_USER && p === AUTH_PASS) {
+    localStorage.setItem("logged", "1");
+    document.getElementById("loginOverlay").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    document.getElementById("loginErr").style.display = "none";
+  } else {
+    document.getElementById("loginErr").style.display = "block";
+  }
+}
+
+
 /* Índices iniciais (15) — com descrições conforme solicitado */
 const DEFAULT_INDICES = [
   { id:"I1", nome:"Qualidade", scope:"area", desc:"Conformidade com especificações, taxa de não conformidade, retrabalho." },
