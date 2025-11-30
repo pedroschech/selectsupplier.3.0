@@ -1,0 +1,1107 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SelectSupplier — Sistema de Apoio à Seleção de Fornecedores</title>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- html2pdf (para exportar PDF do DOM) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+:root{
+  --navy:#001a4d;--blue:#003f91;--bg:#0b1424;--card:#0f2340;--card2:#122a4d;
+  --border:#1e3a5f;--text:#eaf0ff;--muted:#c5cee0;--accent:#ff6a00;
+  --green:#16a34a;--yellow:#facc15;--red:#dc2626;--radius:16px;
+  --swot-f:"#fff8d6"; --swot-o:"#ffe6e6"; --swot-r:"#e6fff0"; --swot-a:"#e6f0ff";
+}
+*{box-sizing:border-box;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Inter,sans-serif}
+html,body{height:100%;margin:0;background:radial-gradient(1000px 600px at -10% -10%,#0d1f3a 0%,#0b1424 60%);color:var(--text)}
+header{background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;display:flex;gap:12px;align-items:center;padding:18px 20px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+header img{height:44px}
+header h1{margin:0;font-size:1.45rem}
+header p{margin:0;color:#e9efff;font-size:.9rem}
+main{max-width:1280px;margin:18px auto;padding:0 18px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:0 8px 24px rgba(0,0,0,.28);margin-bottom:16px}
+.btn{background:var(--accent);border:none;border-radius:999px;color:#fff;padding:8px 14px;font-weight:700;cursor:pointer}
+.btn.secondary{background:#2a4a78}
+.btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn.danger{background:var(--red)}
+input,select,textarea{width:100%;padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:#0e223d;color:var(--text)}
+input[type="number"]{max-width:120px}
+table{width:100%;border-collapse:collapse;margin-top:8px;font-size:.92rem}
+th,td{border:1px solid var(--border);padding:6px 8px;vertical-align:top;color:var(--text)}
+th{background:#16395e;text-align:left}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.tab-btn{background:#0e223d;border:1px solid var(--border);color:var(--text);padding:7px 14px;border-radius:999px;cursor:pointer}
+.tab-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.section{display:none}
+.section.active{display:block}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0;color:var(--text)}
+.box{width:14px;height:14px;border-radius:3px;display:inline-block}
+.pill{display:inline-flex;gap:6px;align-items:center;background:#0e223d;border:1px solid var(--border);padding:2px 8px;border-radius:999px}
+.row{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+.col-12{grid-column:span 12}.col-6{grid-column:span 6}.col-4{grid-column:span 4}.col-3{grid-column:span 3}
+@media (max-width:980px){.col-6,.col-4,.col-3{grid-column:span 12}}
+footer{text-align:center;color:var(--muted);font-size:.85rem;margin:20px 0}
+
+/* LOGIN overlay — sem instrução de credenciais visível */
+#loginOverlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:50}
+#loginCard{background:var(--card2);color:var(--text);border-radius:14px;max-width:420px;width:100%;padding:18px 20px;border:1px solid var(--border)}
+#loginCard h2{margin:4px 0 6px}
+#loginCard input{background:#0e223d;color:var(--text);border:1px solid var(--border)}
+#loginCard .btn{width:100%}
+.small{font-size:.86rem}
+.muted{color:var(--muted)}
+.divider{height:1px;background:var(--border);margin:10px 0}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border:1px solid var(--border);background:var(--card2);border-radius:999px}
+.card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:980px){.card-grid{grid-template-columns:repeat(1,1fr)}}
+
+/* SWOT boxes styles */
+.swot-wrap{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.swot-card{padding:10px;border-radius:8px;min-height:90px;font-weight:700;color:#000}
+.swot-F{background:var(--swot-f);}  /* Forças - amarelo pastel */
+.swot-O{background:var(--swot-o);}  /* Oportunidades - vermelho pastel */
+.swot-R{background:var(--swot-r);}  /* Fraquezas - verde pastel */
+.swot-A{background:var(--swot-a);}  /* Ameaças - azul pastel */
+
+.notice{background:#10253a;padding:10px;border-radius:8px;border:1px solid var(--border);color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <img alt="logo" src="data:image/svg+xml;utf8,
+    <svg xmlns='http://www.w3.org/2000/svg' width='44' height='44'>
+      <rect width='44' height='44' rx='9' fill='%23003f91'/>
+      <path d='M10 30 L22 10 L34 30 Z' fill='%23ff6a00'/>
+    </svg>">
+  <div>
+    <h1>SelectSupplier</h1>
+    <p>Sistema de Apoio à Seleção de Fornecedores · AGEPE II — Escola Politécnica da PUCRS</p>
+  </div>
+</header>
+
+<!-- LOGIN (mantém credenciais internas, sem exibir ao usuário) -->
+<div id="loginOverlay">
+  <div id="loginCard">
+    <h2>Entre para acessar</h2>
+    <p class="small muted">Insira usuário e senha.</p>
+    <label>Usuário</label><input id="loginUser" placeholder="">
+    <label>Senha</label><input id="loginPass" type="password" placeholder="">
+    <button class="btn" style="margin-top:10px" onclick="doLogin()">Entrar</button>
+    <div id="loginErr" style="display:none;color:#ffd0d0;font-weight:600;margin-top:8px">Credenciais incorretas.</div>
+  </div>
+</div>
+
+<main id="app" style="display:none">
+  <div class="card">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="dashboard" onclick="switchTab(event,'dashboard')">Dashboard</button>
+      <button class="tab-btn" data-tab="projeto" onclick="switchTab(event,'projeto')">Projeto</button>
+      <button class="tab-btn" data-tab="fornecedores" onclick="switchTab(event,'fornecedores')">Fornecedores</button>
+      <button class="tab-btn" data-tab="orçamentistas" onclick="switchTab(event,'orçamentistas')">Orçamentistas</button>
+      <button class="tab-btn" data-tab="clientes" onclick="switchTab(event,'clientes')">Clientes</button>
+      <button class="tab-btn" data-tab="indices" onclick="switchTab(event,'indices')">Índices</button>
+      <button class="tab-btn" data-tab="cadastro" onclick="switchTab(event,'cadastro')">Manutenção/Cadastro</button>
+      <button class="tab-btn" data-tab="projetos" onclick="switchTab(event,'projetos')">Projetos</button>
+      <button class="tab-btn" data-tab="sobre" onclick="switchTab(event,'sobre')">Sobre</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="section active">
+      <h2>Dashboard</h2>
+      <div class="row">
+        <div class="col-4">
+          <div class="card">
+            <h3>Projetos por status</h3>
+            <div id="dashStatus"></div>
+            <canvas id="chartStatus" height="120"></canvas>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="card">
+            <h3>Top orçamentistas (por número de projetos)</h3>
+            <canvas id="chartOrc" height="120"></canvas>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="card">
+            <h3>Top clientes (por número de projetos)</h3>
+            <canvas id="chartClient" height="120"></canvas>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="card">
+            <h3>Projetos recentes</h3>
+            <div id="dashRecent"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROJETO: criação/estruturação -->
+    <section id="projeto" class="section">
+      <h2>Configuração do Projeto (novo)</h2>
+      <div class="row">
+        <div class="col-6"><label>Nome do projeto</label><input id="projNome" placeholder="Ex.: Flange usinado + pintura + automação"></div>
+        <div class="col-6"><label>Observações / Escopo</label><input id="projObs" placeholder="Ex.: Lote piloto, lead time máximo 7 dias"></div>
+
+        <div class="col-6">
+          <label>Orçamentista</label>
+          <select id="projOrc"></select>
+        </div>
+        <div class="col-6">
+          <label>Cliente</label>
+          <select id="projClient"></select>
+        </div>
+
+        <div class="col-12">
+          <h3>Áreas</h3>
+          <div id="areasWrap" class="row"></div>
+          <button class="btn" style="margin-top:8px" onclick="addAreaRow()">+ Adicionar área</button>
+        </div>
+
+        <div class="col-12">
+          <h3>Índices do projeto</h3>
+          <div class="small muted">Defina os índices e pesos (%). A soma dos pesos deve ser no máximo <b>100</b>.</div>
+          <table>
+            <thead><tr><th>Incluir</th><th>Índice</th><th>Peso (%)</th><th>Peso normalizado</th><th>Descrição</th></tr></thead>
+            <tbody id="idxBody"></tbody>
+          </table>
+        </div>
+
+        <div class="col-12">
+          <label><input type="checkbox" id="projSWOTToggle"> Incluir matriz SWOT/FOFA (opcional)</label>
+        </div>
+
+        <div class="col-12" id="swotArea" style="display:none">
+          <h3>Matriz SWOT (opcional)</h3>
+          <div class="swot-wrap">
+            <div class="swot-card swot-F"><label>Forças (F)</label><textarea id="swotF" placeholder="Pontos fortes..."></textarea></div>
+            <div class="swot-card swot-O"><label>Oportunidades (O)</label><textarea id="swotO" placeholder="Oportunidades..."></textarea></div>
+            <div class="swot-card swot-R"><label>Fraquezas (F)</label><textarea id="swotR" placeholder="Fraquezas..."></textarea></div>
+            <div class="swot-card swot-A"><label>Ameaças (A)</label><textarea id="swotA" placeholder="Ameaças..."></textarea></div>
+          </div>
+        </div>
+
+        <div class="col-12" style="margin-top:8px">
+          <button class="btn" onclick="criarProjeto()">Criar projeto (salvar como 'A iniciar')</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- FORNECEDORES -->
+    <section id="fornecedores" class="section">
+      <h2>Base de Fornecedores</h2>
+      <div class="row">
+        <div class="col-12">
+          <div id="fornFilter" class="row">
+            <div class="col-4"><label>Filtrar por área</label><select id="filterArea" onchange="renderFornecedores()"><option value="">Todas</option></select></div>
+            <div class="col-4"><label>Mostrar notas por área</label><select id="filterAreaNotes" onchange="renderFornecedores()"><option value="">(nenhuma)</option></select></div>
+            <div class="col-4" style="display:flex;align-items:flex-end;gap:8px"><button class="btn ghost" onclick="resetFiltros()">Limpar filtros</button></div>
+          </div>
+        </div>
+
+        <div class="col-12" id="fornList"></div>
+      </div>
+    </section>
+
+    <!-- ORÇAMENTISTAS -->
+    <section id="orçamentistas" class="section">
+      <h2>Orçamentistas</h2>
+      <div class="row">
+        <div class="col-12">
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input id="orcNome" placeholder="Nome do orçamentista">
+            <button class="btn" onclick="addOrc()">Adicionar</button>
+          </div>
+          <div id="orcList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLIENTES -->
+    <section id="clientes" class="section">
+      <h2>Clientes</h2>
+      <div class="row">
+        <div class="col-12">
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input id="clientNome" placeholder="Nome do cliente">
+            <button class="btn" onclick="addClient()">Adicionar</button>
+          </div>
+          <div id="clientList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ÍNDICES: CRUD -->
+    <section id="indices" class="section">
+      <h2>Índices</h2>
+      <div class="row">
+        <div class="col-12">
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input id="idxId" placeholder="ID (ex: I16)">
+            <input id="idxNome" placeholder="Nome do índice">
+            <select id="idxScope"><option value="area">area</option><option value="global">global</option></select>
+            <input id="idxDesc" placeholder="Descrição">
+            <button class="btn" onclick="addIndice()">Adicionar</button>
+          </div>
+          <div id="idxList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CADASTRO (manutenção geral) -->
+    <section id="cadastro" class="section">
+      <h2>Manutenção / Cadastros rápidos</h2>
+      <div class="row">
+        <div class="col-12">
+          <div class="notice small">Aqui você pode gerenciar rapidamente fornecedores, orçamentistas, clientes e índices — ou abrir as abas correspondentes.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROJETOS (lista e detalhe + PDF export) -->
+    <section id="projetos" class="section">
+      <h2>Projetos</h2>
+      <div class="row">
+        <div class="col-12">
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <label>Filtrar por status</label>
+            <select id="projFilterStatus"><option value="">Todos</option><option value="A iniciar">A iniciar</option><option value="Em andamento">Em andamento</option><option value="Concluído">Concluído</option></select>
+            <label>Filtrar por orçamentista</label>
+            <select id="projFilterOrc"></select>
+            <label>Filtrar por cliente</label>
+            <select id="projFilterClient"></select>
+            <button class="btn ghost" onclick="renderProjetos()">Aplicar</button>
+          </div>
+          <div id="projList"></div>
+        </div>
+      </div>
+
+      <!-- Modal / detalhe do projeto (gera PDF daqui) -->
+      <div id="projDetail" style="display:none;margin-top:12px"></div>
+    </section>
+
+    <!-- SOBRE -->
+    <section id="sobre" class="section">
+      <h2>Sobre</h2>
+      <p class="small muted">Protótipo acadêmico de apoio à decisão multicritério (MCDA) para seleção de fornecedores. Considera múltiplas áreas de processo, índices com pesos limitados a 100%, notas por área e notas globais, matriz SWOT opcional e export para PDF.</p>
+      <h3>Método de cálculo</h3>
+      <ol class="small muted">
+        <li>Selecione 1+ áreas e atribua pesos (%) (soma dos pesos dos índices ≤ 100).</li>
+        <li>Marque os índices e atribua pesos (%). Se a soma > 100, o sistema não calcula.</li>
+        <li>Score da área = Σ(nota índice × peso índice normalizado).</li>
+        <li>Score final do fornecedor = Σ(score da área × peso da área).</li>
+        <li>Somente fornecedores que atendem <b>todas</b> as áreas do projeto são considerados.</li>
+      </ol>
+      <p class="small muted">Dados são salvos localmente no navegador (localStorage). Em produção, o sistema pode ser migrado para um backend com persistência e autenticação corporativa.</p>
+    </section>
+
+  </div>
+</main>
+
+<footer style="text-align:center;color:var(--muted);padding:8px 0">SelectSupplier — Protótipo acadêmico (AGEPE II · PUCRS)</footer>
+
+<script>
+/* ========================= Config / Dados iniciais ========================= */
+/* Credenciais internas (não exibidas): adm / 123 */
+const AUTH_USER = "adm";
+const AUTH_PASS = "123";
+
+/* Índices iniciais (15) — com descrições conforme solicitado */
+const DEFAULT_INDICES = [
+  { id:"I1", nome:"Qualidade", scope:"area", desc:"Conformidade com especificações, taxa de não conformidade, retrabalho." },
+  { id:"I2", nome:"Tempo de Entrega", scope:"area", desc:"Cumprimento de prazos, pontualidade, lead time médio." },
+  { id:"I3", nome:"Custo", scope:"area", desc:"Nível de preço em relação ao mercado, estabilidade de preço, competitividade." },
+  { id:"I4", nome:"Flexibilidade de Capacidade", scope:"area", desc:"Capacidade de reagir a mudanças de volume/mix, urgências." },
+  { id:"I5", nome:"Acuracidade de Documentos Fiscais", scope:"global", desc:"Erros em notas fiscais, divergências pedido x faturamento." },
+  { id:"I6", nome:"Reclamações Técnicas (Histórico)", scope:"area", desc:"Histórico de problemas técnicos (nota alta = poucas reclamações)." },
+  { id:"I7", nome:"Adesão a Normas Ambientais", scope:"global", desc:"Certificações, descarte adequado, requisitos ESG." },
+  { id:"I8", nome:"Facilidade de Comunicação", scope:"global", desc:"Agilidade de resposta, clareza, acesso a responsáveis." },
+  { id:"I9", nome:"Inovação Tecnológica", scope:"area", desc:"Proposição de melhorias, novos processos, sugestões técnicas." },
+  { id:"I10", nome:"Confiabilidade Financeira", scope:"global", desc:"Estabilidade financeira percebida, risco de ruptura por crédito." },
+  { id:"I11", nome:"Capacidade Técnica", scope:"area", desc:"Adequação tecnológica para peças complexas, domínio de processos e normas técnicas." },
+  { id:"I12", nome:"Desempenho Logístico", scope:"area", desc:"Organização de expedição, rastreabilidade, cumprimento de janelas de coleta/entrega." },
+  { id:"I13", nome:"Conformidade Legal & Compliance", scope:"global", desc:"Documentação legal, requisitos trabalhistas e fiscais em dia, política anticorrupção." },
+  { id:"I14", nome:"Suporte & Atendimento Pós-venda", scope:"global", desc:"Rapidez na resolução de problemas, suporte técnico após a entrega." },
+  { id:"I15", nome:"Satisfação do Cliente Interno", scope:"area", desc:"Percepção das áreas usuárias (engenharia, produção, manutenção) sobre o fornecedor." }
+];
+
+/* ÁREAS padrão */
+const AREAS = [
+  { id:"A1", nome:"Usinagem" },{ id:"A2", nome:"Soldagem" },{ id:"A3", nome:"Fundição" },
+  { id:"A4", nome:"Injeção Plástica" },{ id:"A5", nome:"Impressão 3D" },{ id:"A6", nome:"Software / Automação" },
+  { id:"A7", nome:"Tratamento Térmico" },{ id:"A8", nome:"Caldeiraria" },{ id:"A9", nome:"Metrologia 3D" },
+  { id:"A10", nome:"Corte a Laser / Dobra" },{ id:"A11", nome:"Pintura / Acabamento" },{ id:"A12", nome:"Extrusão" },
+  { id:"A13", nome:"Rotomoldagem" },{ id:"A14", nome:"Montagem e Acabamento" },{ id:"A15", nome:"Fabricação de Moldes" }
+];
+
+/* Fornecedores padrão (ampla base, contendo muitos com A1+A2) */
+const DEFAULT_SUPPLIERS = (function(){
+  const S = [
+    /* keep as in previous dataset with many A1+A2 suppliers */
+    { id:"F1", nome:"MecanizaPro", areas:["A1","A2","A3"], notas:{ global:{ I5:8,I7:7,I8:8,I10:7,I13:7,I14:7 }, porArea:{ A1:{ I1:8,I2:6,I3:7,I4:6,I6:8,I9:7,I11:8,I12:7,I15:8 }, A2:{ I1:6,I2:6,I3:7,I4:5,I6:7,I9:5,I11:6,I12:6,I15:6 }, A3:{ I1:5,I2:4,I3:5,I4:5,I6:6,I9:5,I11:5,I12:5,I15:5 } } },
+    { id:"F2", nome:"Usinax", areas:["A1","A2","A5","A10"], notas:{ global:{ I5:7,I7:8,I8:7,I10:6,I13:7,I14:7 }, porArea:{ A1:{ I1:7,I2:8,I3:6,I4:7,I6:8,I9:6,I11:8,I12:8,I15:7 }, A2:{ I1:7,I2:7,I3:6,I4:6,I6:7,I9:5,I11:6,I12:6,I15:6 }, A5:{ I1:8,I2:7,I3:8,I4:6,I6:7,I9:8,I11:7,I12:7,I15:7 }, A10:{ I1:7,I2:8,I3:7,I4:6,I6:7,I9:6,I11:8,I12:8,I15:7 } } },
+    { id:"F3", nome:"SmartAutomate", areas:["A6"], notas:{ global:{ I5:9,I7:9,I8:9,I10:9,I13:9,I14:9 }, porArea:{ A6:{ I1:9,I2:8,I3:8,I4:7,I6:9,I9:9,I11:8,I12:8,I15:9 } } },
+    { id:"F4", nome:"MetalPrime", areas:["A8","A7","A10"], notas:{ global:{ I5:7,I7:7,I8:7,I10:7,I13:7,I14:7 }, porArea:{ A8:{ I1:6,I2:6,I3:6,I4:6,I6:7,I9:5,I11:6,I12:6,I15:6 }, A7:{ I1:7,I2:7,I3:7,I4:6,I6:7,I9:6,I11:7,I12:7,I15:7 }, A10:{ I1:8,I2:8,I3:7,I4:6,I6:7,I9:6,I11:8,I12:8,I15:7 } } },
+    { id:"F5", nome:"GreenPlast", areas:["A4","A11"], notas:{ global:{ I5:8,I7:9,I8:7,I10:8,I13:8,I14:8 }, porArea:{ A4:{ I1:8,I2:7,I3:7,I4:7,I6:8,I9:7,I11:7,I12:7,I15:8 }, A11:{ I1:7,I2:7,I3:6,I4:6,I6:7,I9:6,I11:7,I12:7,I15:7 } } },
+    { id:"F6", nome:"LaserShape", areas:["A10","A1"], notas:{ global:{ I5:8,I7:8,I8:8,I10:7,I13:7,I14:7 }, porArea:{ A10:{ I1:8,I2:8,I3:7,I4:7,I6:8,I9:7,I11:8,I12:8,I15:7 }, A1:{ I1:7,I2:7,I3:6,I4:6,I6:7,I9:6,I11:7,I12:7,I15:7 } } },
+    { id:"F7", nome:"MetriScan", areas:["A9"], notas:{ global:{ I5:9,I7:9,I8:8,I10:8,I13:9,I14:8 }, porArea:{ A9:{ I1:9,I2:8,I3:7,I4:6,I6:8,I9:8,I11:9,I12:8,I15:8 } } },
+    { id:"F8", nome:"TecnoWeld", areas:["A2"], notas:{ global:{ I5:7,I7:7,I8:6,I10:7,I13:7,I14:7 }, porArea:{ A2:{ I1:8,I2:6,I3:6,I4:6,I6:7,I9:6,I11:6,I12:6,I15:7 } } },
+    { id:"F9", nome:"AutoPaint", areas:["A11"], notas:{ global:{ I5:7,I7:8,I8:7,I10:8,I13:8,I14:8 }, porArea:{ A11:{ I1:8,I2:7,I3:6,I4:6,I6:7,I9:6,I11:7,I12:7,I15:7 } } },
+    { id:"F10", nome:"ProtoPrint3D", areas:["A5"], notas:{ global:{ I5:7,I7:7,I8:7,I10:7,I13:7,I14:7 }, porArea:{ A5:{ I1:7,I2:7,I3:7,I4:6,I6:7,I9:8,I11:7,I12:7,I15:7 } } },
+    { id:"F11", nome:"AeroMetals", areas:["A1","A2","A3"], notas:{ global:{ I5:8,I7:8,I8:7,I10:8,I13:8,I14:8 }, porArea:{ A1:{ I1:9,I2:7,I3:6,I4:8,I6:8,I9:8,I11:8,I12:8,I15:9 }, A2:{ I1:7,I2:7,I3:6,I4:6,I6:7,I9:6,I11:6,I12:6,I15:7 }, A3:{ I1:6,I2:5,I3:6,I4:6,I6:6,I9:5,I11:6,I12:6,I15:6 } } },
+    { id:"F12", nome:"TurboMec", areas:["A1","A2"], notas:{ global:{ I5:7,I7:7,I8:6,I10:6,I13:7,I14:6 }, porArea:{ A1:{ I1:8,I2:6,I3:6,I4:8,I6:7,I9:7,I11:7,I12:7,I15:8 }, A2:{ I1:7,I2:6,I3:6,I4:6,I6:7,I9:5,I11:6,I12:6,I15:6 } } },
+    { id:"F13", nome:"ForgeMix", areas:["A1","A2","A7"], notas:{ global:{ I5:7,I7:7,I8:7,I10:7,I13:7,I14:7 }, porArea:{ A1:{ I1:8,I2:7,I3:7,I4:7,I6:7,I9:6,I11:7,I12:7,I15:8 }, A2:{ I1:7,I2:7,I3:6,I4:6,I6:7,I9:6,I11:6,I12:6,I15:7 }, A7:{ I1:7,I2:6,I3:6,I4:6,I6:6,I9:5,I11:6,I12:6,I15:6 } } },
+    { id:"F14", nome:"Proweld Machining", areas:["A1","A2"], notas:{ global:{ I5:8,I7:7,I8:7,I10:7,I13:7,I14:7 }, porArea:{ A1:{ I1:8,I2:8,I3:7,I4:7,I6:8,I9:7,I11:8,I12:8,I15:8 }, A2:{ I1:7,I2:7,I3:6,I4:6,I6:7,I9:6,I11:6,I12:6,I15:7 } } },
+    { id:"F15", nome:"SteelCraft", areas:["A1","A2","A8"], notas:{ global:{ I5:7,I7:7,I8:7,I10:7,I13:7,I14:7 }, porArea:{ A1:{ I1:7,I2:7,I3:6,I4:7,I6:7,I9:6,I11:7,I12:7,I15:7 }, A2:{ I1:8,I2:6,I3:6,I4:6,I6:7,I9:5,I11:6,I12:6,I15:7 }, A8:{ I1:7,I2:6,I3:6,I4:6,I6:6,I9:5,I11:6,I12:6,I15:6 } } },
+    { id:"F16", nome:"Weld&Mill", areas:["A1","A2"], notas:{ global:{ I5:8,I7:8,I8:8,I10:7,I13:8,I14:8 }, porArea:{ A1:{ I1:9,I2:8,I3:7,I4:8,I6:8,I9:7,I11:8,I12:8,I15:9 }, A2:{ I1:8,I2:7,I3:6,I4:6,I6:7,I9:6,I11:6,I12:6,I15:7 } } },
+    { id:"F17", nome:"MaxForge", areas:["A3","A7"], notas:{ global:{ I5:7,I7:6,I8:6,I10:6,I13:7,I14:6 }, porArea:{ A3:{ I1:7,I2:5,I3:6,I4:6,I6:6,I9:5,I11:6,I12:6,I15:6 }, A7:{ I1:7,I2:6,I3:6,I4:6,I6:6,I9:5,I11:6,I12:6,I15:6 } } },
+    { id:"F18", nome:"PlastiForm", areas:["A4"], notas:{ global:{ I5:8,I7:8,I8:7,I10:7,I13:8,I14:7 }, porArea:{ A4:{ I1:7,I2:7,I3:7,I4:7,I6:7,I9:7,I11:7,I12:7,I15:7 } } },
+    { id:"F19", nome:"Rotomax", areas:["A13"], notas:{ global:{ I5:7,I7:7,I8:7,I10:7,I13:7,I14:7 }, porArea:{ A13:{ I1:7,I2:6,I3:7,I4:6,I6:7,I9:6,I11:6,I12:6,I15:6 } } },
+    { id:"F20", nome:"PaintFlex", areas:["A11","A10"], notas:{ global:{ I5:7,I7:8,I8:7,I10:8,I13:8,I14:8 }, porArea:{ A11:{ I1:8,I2:7,I3:6,I4:6,I6:7,I9:6,I11:7,I12:7,I15:7 }, A10:{ I1:7,I2:8,I3:7,I4:6,I6:7,I9:6,I11:8,I12:8,I15:7 } } },
+    { id:"F21", nome:"MeasureTech", areas:["A9","A6"], notas:{ global:{ I5:9,I7:9,I8:8,I10:8,I13:9,I14:8 }, porArea:{ A9:{ I1:9,I2:8,I3:7,I4:6,I6:8,I9:8,I11:9,I12:8,I15:8 }, A6:{ I1:8,I2:8,I3:8,I4:7,I6:8,I9:8,I11:8,I12:8,I15:9 } } },
+    { id:"F22", nome:"InduParts", areas:["A1","A2","A14"], notas:{ global:{ I5:7,I7:7,I8:7,I10:7,I13:7,I14:7 }, porArea:{ A1:{ I1:7,I2:7,I3:7,I4:7,I6:7,I9:6,I11:7,I12:7,I15:7 }, A2:{ I1:7,I2:6,I3:6,I4:6,I6:7,I9:5,I11:6,I12:6,I15:6 }, A14:{ I1:7,I2:7,I3:7,I4:6,I6:7,I9:6,I11:7,I12:7,I15:7 } } }
+  ];
+  return S;
+})();
+
+/* Orçamentistas iniciais */
+const DEFAULT_ORC = ["Bruno Ullmann","Lucas Sitieni","Pedro Schech","Rafael Hirt"];
+
+/* Clientes iniciais (15-20 fictícios) */
+const DEFAULT_CLIENTS = [
+  "Alpha Comércio Ltda", "Beta Distribuidora S/A", "Gama Industrial", "Delta Soluções",
+  "Epsilon Serviços", "Zeta Logística", "Theta Engenharia", "Iota Automação",
+  "Kappa Produtos", "Lambda Farma", "Mu Construções", "Nu Consultoria",
+  "Xi Energias", "Omicron Tec", "Pi Sistemas", "Rho Materiais", "Sigma Obras", "Tau Comércio"
+];
+
+/* LocalStorage keys */
+const SK_SUP = "ss_suppliers_v4";
+const SK_IDX = "ss_indices_v4";
+const SK_ORC = "ss_orc_v4";
+const SK_CLIENT = "ss_client_v4";
+const SK_PROJ = "ss_projects_v4";
+
+/* In-memory state */
+let suppliers = [];
+let indices = [];
+let orcList = [];
+let clientList = [];
+let projects = [];
+let chartStatus=null, chartOrc=null, chartClient=null, chartRes=null;
+
+/* ========================= Helpers ========================= */
+function saveAll(){
+  localStorage.setItem(SK_SUP, JSON.stringify(suppliers));
+  localStorage.setItem(SK_IDX, JSON.stringify(indices));
+  localStorage.setItem(SK_ORC, JSON.stringify(orcList));
+  localStorage.setItem(SK_CLIENT, JSON.stringify(clientList));
+  localStorage.setItem(SK_PROJ, JSON.stringify(projects));
+}
+function loadAll(){
+  suppliers = JSON.parse(localStorage.getItem(SK_SUP) || "null") || structuredClone(DEFAULT_SUPPLIERS);
+  indices = JSON.parse(localStorage.getItem(SK_IDX) || "null") || structuredClone(DEFAULT_INDICES);
+  orcList = JSON.parse(localStorage.getItem(SK_ORC) || "null") || structuredClone(DEFAULT_ORC);
+  clientList = JSON.parse(localStorage.getItem(SK_CLIENT) || "null") || structuredClone(DEFAULT_CLIENTS);
+  projects = JSON.parse(localStorage.getItem(SK_PROJ) || "null") || [];
+}
+function clamp(n,min,max){n=Number(n);if(isNaN(n))return min;return Math.min(Math.max(n,min),max;}
+function getVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function colorByScore(v){ if(v>=7) return getVar('--green'); if(v>=4) return getVar('--yellow'); return getVar('--red'); }
+
+/* ========================= LOGIN ========================= */
+function doLogin(){
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value.trim();
+  if(u===AUTH_USER && p===AUTH_PASS){
+    document.getElementById('loginOverlay').style.display="none";
+    document.getElementById('app').style.display="block";
+    initUI();
+  } else {
+    document.getElementById('loginErr').style.display="block";
+  }
+}
+
+/* ========================= UI INIT ========================= */
+function initUI(){
+  loadAll();
+  renderIndicesTable();
+  ensureAreas();
+  populateAreaFilters();
+  renderFornecedores();
+  renderOrcList();
+  renderClientList();
+  renderIndicesAdmin();
+  populateProjectSelectors();
+  renderProjetos();
+  renderDashboard();
+}
+
+/* ========================= TAB NAV ========================= */
+function switchTab(ev,id){
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+  ev.target.classList.add("active");
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  if(id==="fornecedores") renderFornecedores();
+  if(id==="orçamentistas") renderOrcList();
+  if(id==="clientes") renderClientList();
+  if(id==="indices") renderIndicesAdmin();
+  if(id==="projetos") renderProjetos();
+  if(id==="dashboard") renderDashboard();
+}
+
+/* ========================= ÁREAS no FORMULÁRIO de Projeto ========================= */
+function ensureAreas(){
+  const wrap = document.getElementById('areasWrap');
+  wrap.innerHTML="";
+  addAreaRow(); // cria a primeira obrigatória
+}
+function addAreaRow(){
+  const wrap = document.getElementById('areasWrap');
+  const idx = wrap.querySelectorAll('.card').length;
+  const row = document.createElement('div');
+  row.className="col-12";
+  row.innerHTML = `
+    <div class="card" style="padding:10px">
+      <div class="row">
+        <div class="col-6">
+          <label>Área</label>
+          <select class="area-select">${AREAS.map(a=>`<option value="${a.id}">${a.nome}</option>`).join("")}</select>
+        </div>
+        <div class="col-4">
+          <label>Peso da área (%)</label>
+          <input class="area-weight" type="number" min="0" max="100" value="10">
+        </div>
+        <div class="col-2" style="display:flex;align-items:flex-end;">
+          <button class="btn secondary remove-area" ${idx===0?'disabled':''}>Remover</button>
+        </div>
+      </div>
+    </div>`;
+  wrap.appendChild(row);
+  row.querySelector('.remove-area').onclick = () => {
+    if(idx===0){ return; } // primeira não remove
+    row.remove();
+  };
+}
+
+/* ========================= ÍNDICES (tabela no formulário) ========================= */
+function renderIndicesTable(){
+  const tb = document.getElementById('idxBody');
+  tb.innerHTML="";
+  indices.forEach(ind=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="checkbox" class="idx-inc" data-id="${ind.id}" checked></td>
+      <td>${ind.id} — ${ind.nome}</td>
+      <td><input type="number" class="idx-weight" data-id="${ind.id}" min="0" max="100" value="10"></td>
+      <td class="idx-norm" data-id="${ind.id}">—</td>
+      <td class="small muted">${ind.desc||""}</td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+
+/* ========================= CRIAR PROJETO ========================= */
+function criarProjeto(){
+  // coletar dados
+  const nome = (document.getElementById('projNome').value||"").trim();
+  if(!nome){ alert("Informe o nome do projeto."); return; }
+  const obs = (document.getElementById('projObs').value||"").trim();
+  const orc = document.getElementById('projOrc').value || "";
+  const client = document.getElementById('projClient').value || "";
+  // areas
+  const areaCards = [...document.querySelectorAll('#areasWrap .card')];
+  const areas = areaCards.map(card=>{
+    const id = card.querySelector('.area-select').value;
+    const peso = clamp(card.querySelector('.area-weight').value,0,100);
+    return { id, peso };
+  });
+  if(!areas.length){ alert("Adicione ao menos 1 área."); return; }
+  // índices
+  const idxSelected = [...document.querySelectorAll('.idx-inc')].filter(i=>i.checked).map(i=>i.dataset.id);
+  if(idxSelected.length===0){ alert("Selecione ao menos 1 índice."); return; }
+  const idxWeights = idxSelected.map(id=>{
+    const w = clamp(document.querySelector(`.idx-weight[data-id='${id}']`).value,0,100);
+    return { id, w };
+  });
+  // validação soma pesos índices ≤ 100
+  const sumIdx = idxWeights.reduce((s,it)=>s+it.w,0);
+  if(sumIdx>100){ alert("A soma dos pesos dos índices excede 100. Ajuste antes de criar."); return; }
+  // normalizar índices para cálculo futuro
+  const normIdx = idxWeights.map(it => ({ id: it.id, peso: it.w / (sumIdx||1) }));
+  // normalizar áreas
+  const sumArea = areas.reduce((s,a)=>s+a.peso,0);
+  const normAreas = areas.map(a=>({ id:a.id, peso:a.peso / (sumArea||1) }));
+  // SWOT (opcional)
+  const swotToggle = document.getElementById('projSWOTToggle').checked;
+  const swot = swotToggle ? {
+    F: document.getElementById('swotF').value||"",
+    O: document.getElementById('swotO').value||"",
+    R: document.getElementById('swotR').value||"",
+    A: document.getElementById('swotA').value||""
+  } : null;
+  // novo projeto (status = "A iniciar")
+  const proj = {
+    id: "P" + Date.now(),
+    nome,
+    obs,
+    orc,
+    client,
+    areas: normAreas,
+    indices: normIdx,
+    swot,
+    status: "A iniciar",
+    createdAt: new Date().toISOString()
+  };
+  projects.unshift(proj);
+  saveAll();
+  alert("Projeto criado com sucesso (status: A iniciar).");
+  // limpar form
+  document.getElementById('projNome').value="";
+  document.getElementById('projObs').value="";
+  document.getElementById('projSWOTToggle').checked=false;
+  document.getElementById('swotArea').style.display="none";
+  document.getElementById('swotF').value="";document.getElementById('swotO').value="";document.getElementById('swotR').value="";document.getElementById('swotA').value="";
+  ensureAreas();
+  renderProjetos();
+  renderDashboard();
+}
+
+/* mostrar/hide SWOT */
+document.addEventListener('click', (e)=>{
+  if(e.target && e.target.id==='projSWOTToggle'){
+    const visible = document.getElementById('projSWOTToggle').checked;
+    document.getElementById('swotArea').style.display = visible ? "block" : "none";
+  }
+});
+
+/* ========================= CÁLCULO DE SCORES (usado ao visualizar projeto) ========================= */
+function calcularScoresParaProjeto(proj){
+  // proj: estrutura criada antes (areas: [{id,peso}], indices: [{id,peso}])
+  // identificar fornecedores que atendem todas as áreas
+  const reqAreas = proj.areas.map(a=>a.id);
+  const considerados = suppliers.filter(s => reqAreas.every(a=>s.areas.includes(a)));
+  // calcular score
+  const resultados = considerados.map(s => {
+    const areaScores = proj.areas.map(a=>{
+      // para cada índice: se scope area => usar nota por área, else usar global
+      let scoreArea = 0;
+      proj.indices.forEach(ix=>{
+        const indexDef = indices.find(idf=>idf.id===ix.id);
+        const pesoIx = ix.peso;
+        let nota=0;
+        if(indexDef && indexDef.scope==="area"){
+          nota = s.notas?.porArea?.[a.id]?.[ix.id] ?? 0;
+        } else {
+          nota = s.notas?.global?.[ix.id] ?? 0;
+        }
+        scoreArea += nota * pesoIx;
+      });
+      return { area:a.id, score: scoreArea, w: a.peso };
+    });
+    const final = areaScores.reduce((acc,ar)=>acc + ar.score*ar.w,0);
+    return { supplier: s, areaScores, final };
+  }).sort((a,b)=>b.final - a.final);
+  return resultados;
+}
+
+/* ========================= RENDER PROJETOS (lista) ========================= */
+function renderProjetos(){
+  // populate filter selects
+  const orcSel = document.getElementById('projFilterOrc');
+  const clientSel = document.getElementById('projFilterClient');
+  orcSel.innerHTML = '<option value="">Todos</option>' + orcList.map(o=>`<option value="${o}">${o}</option>`).join("");
+  clientSel.innerHTML = '<option value="">Todos</option>' + clientList.map(c=>`<option value="${c}">${c}</option>`).join("");
+
+  const statusFilter = document.getElementById('projFilterStatus').value;
+  const orcFilter = orcSel.value;
+  const clientFilter = clientSel.value;
+
+  const wrap = document.getElementById('projList');
+  let list = projects.slice();
+  if(statusFilter) list = list.filter(p=>p.status===statusFilter);
+  if(orcFilter) list = list.filter(p=>p.orc===orcFilter);
+  if(clientFilter) list = list.filter(p=>p.client===clientFilter);
+
+  if(!list.length){ wrap.innerHTML = `<p class="muted">Nenhum projeto encontrado.</p>`; return; }
+  let html = "";
+  list.forEach(p=>{
+    html += `<div class="card" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong>${p.nome}</strong><div class="small muted">${p.obs||""}</div></div>
+        <div style="text-align:right">
+          <div class="small muted">Status: <b>${p.status}</b></div>
+          <div class="small muted">Orçamentista: ${p.orc||"—"}</div>
+          <div class="small muted">Cliente: ${p.client||"—"}</div>
+          <div style="margin-top:6px"><button class="btn" onclick="openProjectDetail('${p.id}')">Abrir</button></div>
+        </div>
+      </div>
+    </div>`;
+  });
+  wrap.innerHTML = html;
+  document.getElementById('projDetail').style.display="none";
+}
+
+/* abrir detalhe do projeto (aqui aparece botão export PDF; aqui também pode alterar status) */
+function openProjectDetail(projId){
+  const p = projects.find(x=>x.id===projId);
+  if(!p) return;
+  const wrap = document.getElementById('projDetail');
+  wrap.style.display="block";
+
+  // calcular scores e preparar tabela com TODOS os fornecedores considerados (não só top3)
+  const resultados = calcularScoresParaProjeto(p);
+
+  // construir HTML com dados gerais, índices + pesos, SWOT, fornecedores classificados com gráfico
+  let html = `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <h3>${p.nome}</h3>
+        <div class="small muted">${p.obs||""}</div>
+        <div class="small muted">Orçamentista: ${p.orc||"—"}</div>
+        <div class="small muted">Cliente: ${p.client||"—"}</div>
+        <div class="small muted">Status: <b id="projStatusText">${p.status}</b></div>
+      </div>
+      <div style="text-align:right">
+        <label>Alterar status</label>
+        <select id="projStatusSelect">
+          <option value="A iniciar">A iniciar</option>
+          <option value="Em andamento">Em andamento</option>
+          <option value="Concluído">Concluído</option>
+        </select>
+        <div style="margin-top:8px">
+          <button class="btn" onclick="saveProjectStatus('${p.id}')">Salvar status</button>
+          <button class="btn secondary" onclick="exportProjectPDF('${p.id}')">Exportar resumo (PDF)</button>
+        </div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div>
+      <h4>Índices considerados</h4>
+      <div class="small muted">${p.indices.map(ix=>{ const di = indices.find(d=>d.id===ix.id); return `${ix.id} — ${di?di.nome:ix.id} (peso: ${(ix.peso*100).toFixed(2)}%)`; }).join("<br>")}</div>
+    </div>
+    <div style="margin-top:10px">
+      <h4>Áreas</h4>
+      <div class="small muted">${p.areas.map(a=>{ const nm = AREAS.find(z=>z.id===a.id)?.nome||a.id; return `${nm} (w=${(a.peso*100).toFixed(2)}%)`; }).join("<br>")}</div>
+    </div>`;
+
+  if(p.swot){
+    html += `<div style="margin-top:12px">
+      <h4>SWOT</h4>
+      <div class="swot-wrap">
+        <div class="swot-card swot-F"><strong>Forças</strong><div style="font-weight:400">${p.swot.F||"—"}</div></div>
+        <div class="swot-card swot-O"><strong>Oportunidades</strong><div style="font-weight:400">${p.swot.O||"—"}</div></div>
+        <div class="swot-card swot-R"><strong>Fraquezas</strong><div style="font-weight:400">${p.swot.R||"—"}</div></div>
+        <div class="swot-card swot-A"><strong>Ameaças</strong><div style="font-weight:400">${p.swot.A||"—"}</div></div>
+      </div>
+    </div>`;
+  }
+
+  html += `<div style="margin-top:12px">
+    <h4>Fornecedores considerados (classificados)</h4>
+    <div id="projSuppliersList">${resultados.length?renderSuppliersSummaryHTML(resultados):"<div class='muted'>Nenhum fornecedor atende a todas as áreas do projeto.</div>"}</div>
+  </div>`;
+
+  html += `</div>`;
+  wrap.innerHTML = html;
+
+  // set status select current
+  document.getElementById('projStatusSelect').value = p.status;
+  document.getElementById('projStatusText').textContent = p.status;
+
+  // render grafico com todos fornecedores
+  renderProjectSuppliersChart(resultados, 'projSuppliersChart_'+p.id);
+}
+
+/* retorna HTML com tabela resumida + canvas id for charts */
+function renderSuppliersSummaryHTML(resultados){
+  if(!resultados.length) return "<div class='muted'>—</div>";
+  let html = `<table><thead><tr><th>Rank</th><th>ID</th><th>Fornecedor</th><th>Score</th></tr></thead><tbody>`;
+  resultados.forEach((r,i)=>{
+    html += `<tr><td>#${i+1}</td><td>${r.supplier.id}</td><td>${r.supplier.nome}</td><td><span class="pill" style="border-color:${colorByScore(r.final)}">${r.final.toFixed(2)}</span></td></tr>`;
+  });
+  html += `</tbody></table><div style="margin-top:8px"><canvas id="projSuppliersChart" height="120"></canvas></div>`;
+  return html;
+}
+
+/* render chart for project suppliers (all considered) */
+function renderProjectSuppliersChart(resultados, canvasId){
+  const ctx = document.getElementById('projSuppliersChart').getContext('2d');
+  if(chartRes) chartRes.destroy();
+  const labels = resultados.map(r=>r.supplier.nome);
+  const data = resultados.map(r=>+r.final.toFixed(2));
+  const colors = data.map(v=>colorByScore(v));
+  chartRes = new Chart(ctx,{
+    type:'bar',
+    data:{ labels, datasets:[{ label:'Score', data, backgroundColor:colors, borderColor:colors }]},
+    options:{ responsive:true, scales:{ y:{ beginAtZero:true, max:10 } } }
+  });
+}
+
+/* salvar status do projeto (só aqui pode alterar) */
+function saveProjectStatus(projId){
+  const p = projects.find(x=>x.id===projId);
+  if(!p) return;
+  const newStatus = document.getElementById('projStatusSelect').value;
+  p.status = newStatus;
+  saveAll();
+  document.getElementById('projStatusText').textContent = newStatus;
+  renderProjetos();
+  renderDashboard();
+  alert("Status atualizado.");
+}
+
+/* ========================= EXPORTAR PROJETO PARA PDF (apenas no detalhe) ========================= */
+function exportProjectPDF(projId){
+  const p = projects.find(x=>x.id===projId);
+  if(!p) return;
+  // Criar área temporária com resumo legível (pode usar o mesmo HTML do detalhe)
+  const resultados = calcularScoresParaProjeto(p);
+
+  // montar elemento para exportar
+  const exportEl = document.createElement('div');
+  exportEl.style.padding = "16px";
+  exportEl.style.color = "#000";
+  exportEl.style.background = "#fff";
+  exportEl.innerHTML = `<h2>${p.nome}</h2>
+    <p><b>Descrição:</b> ${p.obs||""}</p>
+    <p><b>Orçamentista:</b> ${p.orc||"—"} · <b>Cliente:</b> ${p.client||"—"}</p>
+    <h3>Índices e pesos</h3>
+    <ul>${p.indices.map(ix=>{ const di=indices.find(d=>d.id===ix.id); return `<li>${ix.id} — ${di?di.nome:ix.id}: ${(ix.peso*100).toFixed(2)}%</li>`}).join("")}</ul>
+    <h3>Áreas</h3>
+    <ul>${p.areas.map(a=>{ const nm = AREAS.find(z=>z.id===a.id)?.nome||a.id; return `<li>${nm}: ${(a.peso*100).toFixed(2)}%</li>`}).join("")}</ul>`;
+
+  if(p.swot){
+    exportEl.innerHTML += `<h3>SWOT</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:${getComputedStyle(document.documentElement).getPropertyValue('--swot-f')};padding:8px"><b>Forças</b><div>${p.swot.F||""}</div></div>
+        <div style="background:${getComputedStyle(document.documentElement).getPropertyValue('--swot-o')};padding:8px"><b>Oportunidades</b><div>${p.swot.O||""}</div></div>
+        <div style="background:${getComputedStyle(document.documentElement).getPropertyValue('--swot-r')};padding:8px"><b>Fraquezas</b><div>${p.swot.R||""}</div></div>
+        <div style="background:${getComputedStyle(document.documentElement).getPropertyValue('--swot-a')};padding:8px"><b>Ameaças</b><div>${p.swot.A||""}</div></div>
+      </div>`;
+  }
+
+  // fornecedores (todos considerados com score)
+  exportEl.innerHTML += `<h3>Fornecedores considerados</h3><table border="1" style="width:100%;border-collapse:collapse"><thead><tr><th>Rank</th><th>ID</th><th>Fornecedor</th><th>Score</th></tr></thead><tbody>${resultados.map((r,i)=>`<tr><td>#${i+1}</td><td>${r.supplier.id}</td><td>${r.supplier.nome}</td><td>${r.final.toFixed(2)}</td></tr>`).join("")}</tbody></table>`;
+
+  // gerar PDF via html2pdf
+  const opt = {
+    margin:0.4,
+    filename:`Resumo_${p.nome.replace(/\s+/g,"_")}.pdf`,
+    image:{ type:'jpeg', quality:0.98 },
+    html2canvas:{ scale:2 },
+    jsPDF:{ unit:'in', format:'a4', orientation:'portrait' }
+  };
+  html2pdf().set(opt).from(exportEl).save();
+}
+
+/* ========================= FORNECEDORES: filtro & render ========================= */
+function populateAreaFilters(){
+  const f = document.getElementById('filterArea');
+  const fn = document.getElementById('filterAreaNotes');
+  f.innerHTML = `<option value="">Todas</option>` + AREAS.map(a=>`<option value="${a.id}">${a.nome}</option>`).join("");
+  fn.innerHTML = `<option value="">(nenhuma)</option>` + AREAS.map(a=>`<option value="${a.id}">${a.nome}</option>`).join("");
+}
+
+function resetFiltros(){ document.getElementById('filterArea').value=""; document.getElementById('filterAreaNotes').value=""; renderFornecedores(); }
+
+function renderFornecedores(){
+  const areaFilter = document.getElementById('filterArea').value;
+  const areaNotes = document.getElementById('filterAreaNotes').value;
+  const wrap = document.getElementById('fornList');
+  let list = suppliers.slice();
+  if(areaFilter) list = list.filter(f=>f.areas.includes(areaFilter));
+  if(!list.length){ wrap.innerHTML="<p class='muted'>Nenhum fornecedor.</p>"; return; }
+
+  let html = `<table><thead><tr><th>ID</th><th>Fornecedor</th><th>Áreas</th><th>Globais</th>`;
+  if(areaNotes) html += `<th>Notas (${AREAS.find(x=>x.id===areaNotes).nome})</th>`;
+  html += `<th>Ações</th></tr></thead><tbody>`;
+
+  list.forEach(f=>{
+    const areas = f.areas.map(a=>AREAS.find(z=>z.id===a)?.nome||a).join(", ");
+    const glob = Object.entries(f.notas?.global||{}).map(([k,v])=>`${k}: ${v}`).join("; ");
+    let areaCol = "";
+    if(areaNotes){
+      const notasA = f.notas?.porArea?.[areaNotes] || {};
+      areaCol = Object.entries(notasA).map(([k,v])=>`${k}: ${v}`).join("; ") || "<span class='muted'>—</span>";
+    }
+    html += `<tr><td>${f.id}</td><td>${f.nome}</td><td>${areas}</td><td>${glob||"<span class='muted'>—</span>"}</td>${areaNotes?`<td>${areaCol}</td>`:""}<td><button class="btn secondary" onclick="startEditSupplier('${f.id}')">Editar</button> <button class="btn danger" onclick="deleteSupplier('${f.id}')">Excluir</button></td></tr>`;
+  });
+
+  html += `</tbody></table>`;
+  wrap.innerHTML = html;
+}
+
+/* ========================= Fornecedores CRUD simplificado (Manutenção tab) ========================= */
+function startEditSupplier(id){
+  // abre aba cadastro e preenche
+  const s = suppliers.find(x=>x.id===id);
+  if(!s) return;
+  switchTab({target: document.querySelector(".tab-btn[data-tab='cadastro']")}, 'cadastro');
+  document.getElementById('c_id').value = s.id;
+  document.getElementById('c_nome').value = s.nome;
+  // render form areas and notes
+  renderCadastro();
+  // marcar areas
+  s.areas.forEach(a=>{
+    const el = [...document.querySelectorAll('#c_areas input')].find(i=>i.value===a);
+    if(el) el.checked = true;
+  });
+  renderNotasPorArea();
+  // preencher globais
+  Object.entries(s.notas?.global||{}).forEach(([k,v])=>{
+    const el = document.querySelector(`#c_notasGlobais input[data-id='${k}']`);
+    if(el) el.value = v;
+  });
+  // preencher porArea
+  Object.entries(s.notas?.porArea||{}).forEach(([aid,map])=>{
+    Object.entries(map).forEach(([k,v])=>{
+      const areaCard = [...document.querySelectorAll('#c_notasPorArea .card')].find(c=>{
+        const nm = c.querySelector('.badge').textContent;
+        return AREAS.find(ax=>ax.nome===nm).id === aid;
+      });
+      if(areaCard){
+        const el = areaCard.querySelector(`input[data-id='${k}']`);
+        if(el) el.value = v;
+      }
+    });
+  });
+}
+
+function deleteSupplier(id){
+  if(!confirm("Excluir fornecedor?")) return;
+  suppliers = suppliers.filter(s=>s.id!==id);
+  saveAll();
+  renderFornecedores();
+  alert("Fornecedor excluído.");
+}
+
+/* ========================= Cadastro / edição de fornecedores (aba cadastro) ========================= */
+function renderCadastro(){
+  // areas checkboxes
+  const wrapAreas = document.getElementById('c_areas');
+  wrapAreas.innerHTML = AREAS.map(a=>`<label class="col-3 small"><input type="checkbox" value="${a.id}" onchange="renderNotasPorArea()"> ${a.nome}</label>`).join("");
+  // notas globais
+  const wrapGlob = document.getElementById('c_notasGlobais');
+  wrapGlob.innerHTML = indices.filter(i=>i.scope==="global").map(i=>`<label class="small">${i.id} — ${i.nome}<input type="number" min="0" max="10" step="0.1" data-id="${i.id}"></label>`).join("");
+  renderNotasPorArea();
+}
+function renderNotasPorArea(){
+  const wrap = document.getElementById('c_notasPorArea');
+  const marcadas = [...document.querySelectorAll('#c_areas input:checked')].map(i=>i.value);
+  const idxArea = indices.filter(i=>i.scope==="area");
+  if(!marcadas.length){ wrap.innerHTML = `<p class="muted">Marque áreas para preencher notas por área.</p>`; return; }
+  wrap.innerHTML = marcadas.map(a=>{
+    const nm = AREAS.find(x=>x.id===a).nome;
+    const ins = idxArea.map(i=>`<label class="small">${i.id} — ${i.nome}<input type="number" min="0" max="10" step="0.1" data-id="${i.id}"></label>`).join("");
+    return `<div class="card" style="background:var(--card2)"><div class="badge">${nm}</div><div>${ins}</div></div>`;
+  }).join("");
+}
+function salvarFornecedor(){
+  const id = (document.getElementById('c_id').value||"").trim();
+  const nome = (document.getElementById('c_nome').value||"").trim();
+  if(!id || !nome){ alert("Preencha ID e Nome."); return; }
+  const areas = [...document.querySelectorAll('#c_areas input:checked')].map(i=>i.value);
+  if(!areas.length){ alert("Selecione ao menos uma área."); return; }
+  const glob = {};
+  document.querySelectorAll('#c_notasGlobais input').forEach(inp=>{ if(inp.value!=="") glob[inp.dataset.id]=clamp(inp.value,0,10); });
+  const porArea = {};
+  document.querySelectorAll('#c_notasPorArea .card').forEach(card=>{
+    const areaNome = card.querySelector('.badge').textContent;
+    const areaId = AREAS.find(a=>a.nome===areaNome).id;
+    porArea[areaId] = {};
+    card.querySelectorAll('input').forEach(i=>{ if(i.value!=="") porArea[areaId][i.dataset.id]=clamp(i.value,0,10); });
+  });
+  const obj = { id, nome, areas, notas:{ global:glob, porArea } };
+  // if exists, replace; else push
+  const ix = suppliers.findIndex(s=>s.id===id);
+  if(ix>=0) suppliers[ix] = obj; else suppliers.push(obj);
+  saveAll();
+  alert("Fornecedor salvo.");
+  // limpar
+  document.getElementById('c_id').value="";
+  document.getElementById('c_nome').value="";
+  renderFornecedores();
+}
+
+/* ========================= ORÇAMENTISTAS CRUD ========================= */
+function renderOrcList(){
+  const wrap = document.getElementById('orcList');
+  wrap.innerHTML = "";
+  if(!orcList.length){ wrap.innerHTML = "<p class='muted'>Nenhum orçamentista.</p>"; return; }
+  let html = "<table><thead><tr><th>Nome</th><th>Ações</th></tr></thead><tbody>";
+  orcList.forEach((o,idx)=> html += `<tr><td>${o}</td><td><button class="btn secondary" onclick="editOrc(${idx})">Editar</button> <button class="btn danger" onclick="delOrc(${idx})">Excluir</button></td></tr>`);
+  html += "</tbody></table>";
+  wrap.innerHTML = html;
+  // populate project selector
+  const sel = document.getElementById('projOrc');
+  sel.innerHTML = `<option value="">(nenhum)</option>`+orcList.map(o=>`<option value="${o}">${o}</option>`).join("");
+  document.getElementById('projFilterOrc').innerHTML = `<option value="">Todos</option>`+orcList.map(o=>`<option value="${o}">${o}</option>`).join("");
+}
+function addOrc(){
+  const v = (document.getElementById('orcNome').value||"").trim();
+  if(!v){ alert("Informe o nome."); return; }
+  orcList.push(v);
+  document.getElementById('orcNome').value="";
+  saveAll();
+  renderOrcList();
+}
+function editOrc(i){
+  const name = prompt("Editar orçamentista", orcList[i]);
+  if(name) { orcList[i]=name; saveAll(); renderOrcList(); }
+}
+function delOrc(i){
+  if(!confirm("Excluir orçamentista?")) return;
+  orcList.splice(i,1); saveAll(); renderOrcList();
+}
+
+/* ========================= CLIENTES CRUD ========================= */
+function renderClientList(){
+  const wrap = document.getElementById('clientList');
+  wrap.innerHTML = "";
+  if(!clientList.length){ wrap.innerHTML = "<p class='muted'>Nenhum cliente.</p>"; return; }
+  let html = "<table><thead><tr><th>Nome</th><th>Ações</th></tr></thead><tbody>";
+  clientList.forEach((c,idx)=> html += `<tr><td>${c}</td><td><button class="btn secondary" onclick="editClient(${idx})">Editar</button> <button class="btn danger" onclick="delClient(${idx})">Excluir</button></td></tr>`);
+  html += "</tbody></table>";
+  wrap.innerHTML = html;
+  // populate selector
+  document.getElementById('projClient').innerHTML = `<option value="">(nenhum)</option>`+clientList.map(c=>`<option value="${c}">${c}</option>`).join("");
+  document.getElementById('projFilterClient').innerHTML = `<option value="">Todos</option>`+clientList.map(c=>`<option value="${c}">${c}</option>`).join("");
+}
+function addClient(){
+  const v = (document.getElementById('clientNome').value||"").trim();
+  if(!v){ alert("Informe o nome."); return; }
+  clientList.push(v);
+  document.getElementById('clientNome').value="";
+  saveAll();
+  renderClientList();
+}
+function editClient(i){
+  const name = prompt("Editar cliente", clientList[i]);
+  if(name){ clientList[i]=name; saveAll(); renderClientList(); }
+}
+function delClient(i){
+  if(!confirm("Excluir cliente?")) return;
+  clientList.splice(i,1); saveAll(); renderClientList();
+}
+
+/* ========================= INDICES CRUD (aba indices) ========================= */
+function renderIndicesAdmin(){
+  const wrap = document.getElementById('idxList');
+  wrap.innerHTML = "";
+  if(!indices.length){ wrap.innerHTML="<p class='muted'>Nenhum índice.</p>"; return; }
+  let html = "<table><thead><tr><th>ID</th><th>Nome</th><th>Scope</th><th>Descrição</th><th>Ações</th></tr></thead><tbody>";
+  indices.forEach((i,idx)=> html += `<tr><td>${i.id}</td><td>${i.nome}</td><td>${i.scope}</td><td>${i.desc}</td><td><button class="btn secondary" onclick="editIndice(${idx})">Editar</button> <button class="btn danger" onclick="delIndice(${idx})">Excluir</button></td></tr>`);
+  html += "</tbody></table>";
+  wrap.innerHTML = html;
+
+  // also re-render indices table in project form
+  renderIndicesTable();
+}
+function addIndice(){
+  const id = (document.getElementById('idxId').value||"").trim();
+  const nome = (document.getElementById('idxNome').value||"").trim();
+  const scope = document.getElementById('idxScope').value;
+  const desc = (document.getElementById('idxDesc').value||"").trim();
+  if(!id || !nome){ alert("Preencha ID e nome."); return; }
+  if(indices.some(x=>x.id===id)){ alert("ID já existe."); return; }
+  indices.push({ id, nome, scope, desc });
+  document.getElementById('idxId').value=""; document.getElementById('idxNome').value=""; document.getElementById('idxDesc').value="";
+  saveAll(); renderIndicesAdmin();
+}
+function editIndice(ix){
+  const i = indices[ix];
+  const newName = prompt("Nome do índice", i.nome);
+  if(!newName) return;
+  const newScope = prompt("Scope (area/global)", i.scope) || i.scope;
+  const newDesc = prompt("Descrição", i.desc) || i.desc;
+  i.nome=newName; i.scope=newScope; i.desc=newDesc;
+  saveAll(); renderIndicesAdmin();
+}
+function delIndice(ix){
+  if(!confirm("Excluir índice?")) return;
+  indices.splice(ix,1); saveAll(); renderIndicesAdmin();
+}
+
+/* ========================= DASHBOARD ========================= */
+function renderDashboard(){
+  // counts by status
+  const counts = { "A iniciar":0, "Em andamento":0, "Concluído":0 };
+  projects.forEach(p=> counts[p.status] = (counts[p.status]||0)+1);
+  document.getElementById('dashStatus').innerHTML = `<div class="small">A iniciar: <b>${counts["A iniciar"]}</b></div><div class="small">Em andamento: <b>${counts["Em andamento"]}</b></div><div class="small">Concluídos: <b>${counts["Concluído"]}</b></div>`;
+  // chart status
+  const ctxS = document.getElementById('chartStatus').getContext('2d');
+  if(chartStatus) chartStatus.destroy();
+  chartStatus = new Chart(ctxS,{ type:'doughnut', data:{ labels:['A iniciar','Em andamento','Concluído'], datasets:[{ data:[counts["A iniciar"],counts["Em andamento"],counts["Concluído"]], backgroundColor:[getVar('--yellow'),getVar('--blue') || '#003f91',getVar('--green')] }] } });
+  // orc counts
+  const orcCounts = {};
+  projects.forEach(p=> { if(p.orc) orcCounts[p.orc] = (orcCounts[p.orc]||0)+1; });
+  const orcLabels = Object.keys(orcCounts); const orcData = Object.values(orcCounts);
+  const ctxO = document.getElementById('chartOrc').getContext('2d'); if(chartOrc) chartOrc.destroy();
+  chartOrc = new Chart(ctxO,{ type:'bar', data:{ labels:orcLabels, datasets:[{ data:orcData, backgroundColor:orcData.map(v=>getVar('--blue')) }] }, options:{ responsive:true, plugins:{ legend:{ display:false } } } });
+  // client counts
+  const clientCounts = {}; projects.forEach(p=> { if(p.client) clientCounts[p.client] = (clientCounts[p.client]||0)+1; });
+  const clientLabels = Object.keys(clientCounts); const clientData = Object.values(clientCounts);
+  const ctxC = document.getElementById('chartClient').getContext('2d'); if(chartClient) chartClient.destroy();
+  chartClient = new Chart(ctxC,{ type:'bar', data:{ labels:clientLabels, datasets:[{ data:clientData, backgroundColor:clientData.map(v=>getVar('--green')) }] }, options:{ responsive:true, plugins:{ legend:{ display:false } } } });
+  // recent projects
+  const recentWrap = document.getElementById('dashRecent');
+  if(!projects.length) recentWrap.innerHTML = "<p class='muted'>Nenhum projeto.</p>"; else {
+    recentWrap.innerHTML = projects.slice(0,6).map(p=>`<div style="padding:8px;border-bottom:1px solid var(--border)"><strong>${p.nome}</strong><div class="small muted">${p.obs||""}</div><div class="small muted">Status: ${p.status} · Orçamentista: ${p.orc||"—"}</div></div>`).join("");
+  }
+}
+
+/* ========================= POPULATE SELECTORS ========================= */
+function populateProjectSelectors(){
+  // orc and client in project form
+  const orc = document.getElementById('projOrc');
+  orc.innerHTML = `<option value="">(nenhum)</option>` + orcList.map(o=>`<option value="${o}">${o}</option>`).join("");
+  document.getElementById('projClient').innerHTML = `<option value="">(nenhum)</option>` + clientList.map(c=>`<option value="${c}">${c}</option>`).join("");
+}
+
+/* ========================= INDICES TABLE (re-render) ========================= */
+function renderIndicesTable(){
+  const tb = document.getElementById('idxBody');
+  if(!tb) return;
+  tb.innerHTML="";
+  indices.forEach(ind=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="checkbox" class="idx-inc" data-id="${ind.id}" checked></td>
+      <td>${ind.id} — ${ind.nome}</td>
+      <td><input type="number" class="idx-weight" data-id="${ind.id}" min="0" max="100" value="10"></td>
+      <td class="idx-norm" data-id="${ind.id}">—</td>
+      <td class="small muted">${ind.desc||""}</td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+
+/* ========================= Render suppliers summary (helper used earlier) ========================= */
+function renderSuppliersSummaryHTML(resultados){
+  if(!resultados.length) return "<div class='muted'>—</div>";
+  let html = `<table><thead><tr><th>Rank</th><th>ID</th><th>Fornecedor</th><th>Score</th></tr></thead><tbody>`;
+  resultados.forEach((r,i)=>{
+    html += `<tr><td>#${i+1}</td><td>${r.supplier.id}</td><td>${r.supplier.nome}</td><td><span class="pill" style="border-color:${colorByScore(r.final)}">${r.final.toFixed(2)}</span></td></tr>`;
+  });
+  html += `</tbody></table><div style="margin-top:8px"><canvas id="projSuppliersChart" height="120"></canvas></div>`;
+  return html;
+}
+
+/* ========================= Inicialização (após loadAll) ========================= */
+loadAll();
+/* show app when user logs in; initUI() is called after successful login */
+
+</script>
+</body>
+</html>
+```
