@@ -1120,3 +1120,9 @@ loadAll();
 </body>
 </html>
 ```
+window.onload = () => {
+  if (localStorage.getItem("logged") === "1") {
+    document.getElementById("loginOverlay").style.display = "none";
+    document.getElementById("app").style.display = "block";
+  }
+};
